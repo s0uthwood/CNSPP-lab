@@ -1,4 +1,4 @@
-from utils import gcd
+from .utils import gcd
 
 def BBS(p, q, s, num):
     if(p % 4 != 3 or q % 4 != 3):
