@@ -227,19 +227,29 @@ def padding_attack(cipher, key):
     if len(cipher) != 32:
         return False
     origin_iv = int.from_bytes(cipher[:16], byteorder = 'big', signed = False)
-    hack_iv = origin_iv
-    hack_iv = hack_iv >> 8 << 8 # hack_iv & 0xff..ff00
+    hack_iv = origin_iv >> 8 << 8 # hack_iv & 0xff..ff00
     last_padding = []
-    for j in range(0xff):
+    for j in range(0x100):
         # print (last_plain)
         if sm4_decrypt_cbc_in_server(cipher[-16:], key, hack_iv) == True:
             last_padding.append(j)
         hack_iv += 1
-    hack_iv = (hack_iv >> 8 << 8) + (last_padding[0] ^ 1 ^ 2)
+    hack_iv = (origin_iv >> 8 << 8) | (last_padding[0] ^ 1 ^ 2)
     start = 2
     if len(last_padding) > 1:
         start = last_padding[0] ^ last_padding[1] ^ 1
-        hack_iv = origin_iv ^ int(("%x" % (start ^ (start + 1))).rjust(2, '0') * start, 16)
+        tmp_hack_iv = (hack_iv >> 16 << 16) ^ (hack_iv & 0xff)
+        hack_iv = (hack_iv >> 8 << 8) | last_padding[0]
+        for j in range(0x100):
+            # print (hex(tmp_hack_iv))
+            if sm4_decrypt_cbc_in_server(cipher[-16:], key, tmp_hack_iv) == True:
+                hack_iv = (hack_iv >> 8 << 8) | (last_padding[1])
+                break
+            tmp_hack_iv += 0x100
+        # print (hex(last_padding[0]), hex(last_padding[1]))
+        # print (hack_iv.to_bytes(16, 'big'))
+        # print (origin_iv.to_bytes(16, 'big'))
+        hack_iv = hack_iv ^ int(("%x" % (start ^ (start + 1))).rjust(2, '0') * start, 16)
         start += 1
     for i in range(start, 17):
         hack_iv = (hack_iv >> (8 * i) << (8 * i)) ^ (hack_iv & ((1 << 8 * (i - 1)) - 1)) # hack_iv & 0xff..f00f..ff
@@ -266,6 +276,7 @@ def sm4_decrypt_cbc_in_server(xs, mk, iv):
         res = int.from_bytes(res, byteorder = 'big', signed = False)
         plain += (res ^ iv).to_bytes(16, byteorder = 'big')
         iv = c
+    # print (plain)
     return server_judge(plain)
 
 def server_judge(decrypted_value):
