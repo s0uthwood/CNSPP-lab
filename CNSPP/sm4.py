@@ -240,9 +240,12 @@ def padding_attack(cipher, key):
         start = last_padding[0] ^ last_padding[1] ^ 1
         tmp_hack_iv = (hack_iv >> 16 << 16) ^ (hack_iv & 0xff)
         hack_iv = (hack_iv >> 8 << 8) | last_padding[0]
+        FLAG = True
+        if start == 2:
+            FLAG = False # 如果填充为0202的话，异或后结尾为01，一定成功，此时遇到False才需要更换
         for j in range(0x100):
             # print (hex(tmp_hack_iv))
-            if sm4_decrypt_cbc_in_server(cipher[-16:], key, tmp_hack_iv) == True:
+            if sm4_decrypt_cbc_in_server(cipher[-16:], key, tmp_hack_iv) == FLAG:
                 hack_iv = (hack_iv >> 8 << 8) | (last_padding[1])
                 break
             tmp_hack_iv += 0x100
