@@ -156,7 +156,7 @@ def sm4_decrypt_ecb(xs, mk):
         plain = sm4_decrypt_rk(xs & 0xffffffffffffffffffffffffffffffff, rk) + plain
         xs >>= 128
     padding_length = plain[-1]
-    return plain[:-padding_length * 2]
+    return plain[:-padding_length]
 
 def sm4_encrypt_cbc(xs, mk, iv):
     plain_length = len(xs)
@@ -189,7 +189,7 @@ def sm4_decrypt_cbc(xs, mk, iv):
         plain += (res ^ iv).to_bytes(16, byteorder = 'big')
         iv = c
     padding_length = plain[-1]
-    return plain[:-padding_length * 2]
+    return plain[:-padding_length]
 
 def sm4_encrypt_ctr(xs, mk, ctr):
     plain_length = len(xs)
