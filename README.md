@@ -12,6 +12,10 @@ Cryptography Practice
 
 Now speed (-O3): 128Mb in 0.65s (about 200Mbps)
 
+TODO:
+
+- Efficient Rijndael Encryption Implementation with Composite Field Arithmetic
+
 ## des
 
 - 郑焰. DES 算法软件速度优化的实现 [J]. 计算机安全,2005(08):21-23.
