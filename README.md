@@ -10,7 +10,7 @@ Cryptography Practice
 
 - https://zhuanlan.zhihu.com/p/42264499
 
-Now speed (-O3): about 200Mbps
+Now speed (-O3): 128Mb in 0.65s (about 200Mbps)
 
 ## des
 
