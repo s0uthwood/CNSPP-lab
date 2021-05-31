@@ -1,5 +1,6 @@
 from utils import gcd, ex_gcd, inverse, all_prime, my_pow, is_prime_miller, crt, ex_crt
 import random
+from SM3 import sm3_calc
 
 def lucas(p, X, Y, k):
     delta = X * X - 4 * Y
@@ -140,6 +141,15 @@ SM2_Curve = Curve(
     0xBC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0  # G_y
 )
 
+SM2_sign_Curve = Curve(
+    0x787968B4FA32C3FD2417842E73BBFEFF2F3C848B6831D7E0EC65228B3937E498,
+    0x63E4C6D3B23B0C849CF84241484BFE48F61D59A5B16BA06E6E12D1DA27C5249A,
+    0x8542D69E4C044F18E8B92435BF6FF7DE457283915C45517D722EDB8B08F1DFC3,
+    0x8542D69E4C044F18E8B92435BF6FF7DD297720630485628D5AE74EE7C32E79B7,
+    0x421DEBD61B62EAB6746434EBC3CC315E32220B3BADD50BDC4C4E6C147FEDD43D,
+    0x680512BCBB42C07D47349D2153B70C4E5D7FDFCBFA36EA1A85841B9E46E09A2
+)
+
 test_Curve = Curve(
     -3,
     2455155546008943817740293915197451784769108058161191238065,
@@ -245,6 +255,47 @@ def ECC_decrypt_point(curve: Curve, na: int, C1: ECC_Point, C2: ECC_Point):
     M = C2 - na * C1
     return M
 
+def SM2_sign(ENTLA: bytes, IDA: bytes, curve: Curve, point: ECC_Point, msg: bytes, da):
+    # point is public key
+    Z = ENTLA + IDA + int2byte(curve.a) + int2byte(curve.b) + int2byte(curve.G_x) + int2byte(curve.G_y) + int2byte(point.x) + int2byte(point.y)
+    Z = sm3_calc(Z)
+    M_hat = int2byte(int(Z, 16)) + msg
+    # print (M_hat)
+    # print (sm3_calc(M_hat))
+    e = int(sm3_calc(M_hat), 16)
+    G = ECC_Point(curve.G_x, curve.G_y, curve)
+    while True:
+        # k = random.randint(1, curve.n - 1)
+        k = 0x6CB28D99385C175C94F94E934817663FC176D925DD72B727260DBAAE1FB2F96F
+        P = k * G
+        r = (e + P.x) % curve.n
+        if r != 0 and r + k != curve.n:
+            break
+    s = inverse(1 + da, curve.n) * (k - r * da) % curve.n
+    return msg, r, s
+
+def SM2_valid(curve: Curve, Z_A, P_A, M, r, s):
+    if r <= 1 or r >= curve.n:
+        return False
+    if s <= 1 or s >= curve.n:
+        return False
+    M_hat = Z_A + M
+    e = int(sm3_calc(M_hat), 16)
+    print (hex(e))
+    t = (r + s) % curve.n
+    print (hex(t))
+    if t == 0:
+        return False
+    G = ECC_Point(curve.G_x, curve.G_y, curve)
+    vPoint = s * G + t * P_A
+    print (hex(vPoint.x))
+    print (hex(vPoint.y))
+    R = (e + vPoint.x) % curve.n
+    print (hex(R))
+    if R == r:
+        return True
+    return False
+
 def main():
     curve = Curve(2, 3, 17, 128, 1, 1)
     P = ECC_Point(2, 7, curve)
@@ -268,13 +319,18 @@ def main():
     print (C1)
     print (C2)
     print (ECC_decrypt_point(curve_en, na, C1, C2))
-    M = ECC_Point(2594161300049362469169638638781986485403377947559889224556, -915731655498392811604767074090214190962897463083669095347, test_Curve)
-    pk = ECC_Point(4535708181192800030922425040161683059768487875080759471914, -1061575060680846108649238340040410272066486614691829051119, test_Curve) * 273065013239976945911310331771
+    # M = ECC_Point(2594161300049362469169638638781986485403377947559889224556, -915731655498392811604767074090214190962897463083669095347, test_Curve)
+    # pk = ECC_Point(4535708181192800030922425040161683059768487875080759471914, -1061575060680846108649238340040410272066486614691829051119, test_Curve) * 273065013239976945911310331771
     # print (pk)
-    C1, C2 = ECC_encrypt_point(test_Curve, M, pk)
-    print (C1)
-    print (C2)
+    # C1, C2 = ECC_encrypt_point(test_Curve, M, pk)
+    # print (C1)
+    # print (C2)
     print (curve_en.calc_y(112)) # 26 or 231
+    public_key = ECC_Point(0x0AE4C7798AA0F119471BEE11825BE46202BB79E2A5844495E97C04FF4DF2548A, 0x7C0240F88F1CD4E16352A73C17B7F16F07353E53A176D684A9FE0C6BB798E857, SM2_sign_Curve)
+    M, r, s = SM2_sign(b'\x00\x90', b'ALICE123@YAHOO.COM', SM2_sign_Curve, public_key, b'message digest', 0x128B2FA8BD433C6C068C8D803DFF79792A519A55171B1B650C23661D15897263)
+    print (hex(r), hex(s))
+    boo = SM2_valid(SM2_sign_Curve, int2byte(0xf4a38489e32b45b6f876e3ac2168ca392362dc8f23459c1d1146fc3dbfb7bc9a), public_key, b'message digest', 0x40f1ec59f793d9f49e09dcef49130d4194f79fb1eed2caa55bacdb49c4e755d1, 0x6fc6dac32c5d5cf10c77dfb20f7c2eb667a457872fb09ec56327a67ec7deebe7)
+    print (boo)
 
 if __name__ == '__main__':
     main()

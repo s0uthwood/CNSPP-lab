@@ -41,7 +41,7 @@ def sm3_extend(m):
     w1 = []
     w2 = []
     for i in range(16):
-        w1.append(int(m[i * 16 : (i + 1) * 16]))
+        w1.append(int(m[i * 32 : (i + 1) * 32], 2))
     for i in range(16, 68):
         w1.append(P1(w1[i - 16] ^ w1[i - 9] ^ left_rot(w1[i - 3], 15, 32)) ^ left_rot(w1[i - 13], 7, 32) ^ w1[i - 6])
     for i in range(64):
@@ -87,3 +87,4 @@ if __name__ == "__main__":
     # print (sm3_padding(b'abc'))
     print (sm3_calc(b'abc'))
     print (sm3_calc(b'\x33\x66\x77\x99\x00'))
+    print (sm3_calc(b'\xf4\xa3\x84\x89\xe3+E\xb6\xf8v\xe3\xac!h\xca9#b\xdc\x8f#E\x9c\x1d\x11F\xfc=\xbf\xb7\xbc\x9amessage digest'))
