@@ -237,9 +237,9 @@ void key_exp(__m128i* last_key, __m128i* next_key, char rcon) {
 	unsigned int* int_last_key = (unsigned int*)last_key;
 	unsigned int* int_next_key = (unsigned int*)next_key;
 	int_next_key[0] ^= int_last_key[0];
-	for (int i = 1; i < 4; ++i) {
-		int_next_key[i] = int_last_key[i] ^ int_next_key[i - 1];
-	}
+	int_next_key[1] = int_last_key[1] ^ int_next_key[0];
+	int_next_key[2] = int_last_key[2] ^ int_next_key[1];
+	int_next_key[3] = int_last_key[3] ^ int_next_key[2];
 }
 
 void sub_bytes(char* in, int len) {
@@ -287,7 +287,7 @@ void round_function(__m128i* in) {
 
 __m128i aes_fast_encrypt(__m128i plain, __m128i* key) {
 	plain = _mm_xor_si128(plain, key[0]);
-	for (int i = 1; i < 10; ++i) {
+	for (register int i = 1; i < 10; ++i) {
 		//round_function(&plain);
 		unsigned int* pint_in = (unsigned int*)&plain;
 		unsigned int out[4];
