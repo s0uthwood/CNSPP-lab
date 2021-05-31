@@ -65,6 +65,7 @@ def BitReorganization(s):
 
 
 def left_rot(x, n, x_len):
+	n %= x_len
 	return ((x << n) | (x >> (x_len - n))) & ((1 << x_len) - 1)
 
 def left_rot1(x):
