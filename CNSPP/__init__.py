@@ -6,3 +6,5 @@ from .aes import *
 from .sm4 import *
 from .stream import *
 from .ZUC import *
+from .RSA import *
+from .ECC import *

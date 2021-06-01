@@ -1,4 +1,5 @@
 from ZUC import left_rot
+from ECC import str2byte
 
 k = [
     0x5A827999, # t in [0, 19]
@@ -74,20 +75,26 @@ def sha1_calc(m: bytes):
         digest += hex(r)[2:].rjust(8, '0')
     return digest
 
-def hmac(M: bytes, K, bit_len):
+def hmac_sha1(M: bytes, K: bytes, bit_len):
+    if bit_len % 8 != 0:
+        raise ValueError("wrong bit length")
+    K += b'\x00' * (bit_len // 8 - len(K))
+    K = int.from_bytes(K, 'big', signed=False)
     ipad = int("00110110" * (bit_len // 8), 2)
-    K_plus = int(bin(K)[2:].rjust(bit_len, '0'), 2)
+    # K_plus = int(bin(K)[2:].rjust(bit_len, '0'), 2)
+    K_plus = K
     Si = K_plus ^ ipad
     tmp = sha1_calc(Si.to_bytes(bit_len // 8, 'big') + M)
-    opad = int("01011010" * (bit_len // 8), 2)
+    print (Si.to_bytes(bit_len // 8, 'big') + M)
+    opad = int("01011100" * (bit_len // 8), 2)
     So = K_plus ^ opad
     return sha1_calc(So.to_bytes(bit_len // 8, 'big') + int(tmp, 16).to_bytes(20, 'big'))
 
 def main():
-    d = sha1_calc(b'abc')
-    print (d)
+    print (sha1_calc(b'abc'))
     print (sha1_calc(b'abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq'))
     print (sha1_calc(b'aa' * 500000))
+    print (hmac_sha1(b'Hi There', b'\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b', 160))
 
 if __name__ == "__main__":
     main()
