@@ -20,7 +20,9 @@ from CNSPP import *
 
 - https://zhuanlan.zhihu.com/p/42264499
 
-Now speed (-O3): 128Mb in 0.6s (about 200Mbps)
+Current speed (-O3): 2Gb in 0.6s (about 3.3Gbps)
+
+> CPU: i5-9600k
 
 TODO:
 
