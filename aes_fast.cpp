@@ -251,6 +251,27 @@ void load_round_key(__m128i* key_schedule, unsigned char* init_key) {
 	key_exp(&key_schedule[9], &key_schedule[10], (char)0x36);
 }
 
+void load_round_key_decrypt(__m128i* key_schedule, unsigned char* init_key) {
+	key_schedule[0] = _mm_loadu_si128((__m128i*)init_key);
+	key_exp(&key_schedule[0], &key_schedule[1], (char)0x1);
+	key_exp(&key_schedule[1], &key_schedule[2], (char)0x2);
+	key_exp(&key_schedule[2], &key_schedule[3], (char)0x4);
+	key_exp(&key_schedule[3], &key_schedule[4], (char)0x8);
+	key_exp(&key_schedule[4], &key_schedule[5], (char)0x10);
+	key_exp(&key_schedule[5], &key_schedule[6], (char)0x20);
+	key_exp(&key_schedule[6], &key_schedule[7], (char)0x40);
+	key_exp(&key_schedule[7], &key_schedule[8], (char)0x80);
+	key_exp(&key_schedule[8], &key_schedule[9], (char)0x1b);
+	key_exp(&key_schedule[9], &key_schedule[10], (char)0x36);
+	for(int i = 1; i < 10; ++i){
+		unsigned int *int_key = (unsigned int *)&key_schedule[i];
+		int_key[0] = deTBOX0[aes_sbox[(int_key[0]) & 0xFF]] ^ deTBOX1[aes_sbox[(int_key[0] >> 8) & 0xFF]]^deTBOX2[aes_sbox[(int_key[0]>>16) & 0xFF]]^deTBOX3[aes_sbox[(int_key[0] >> 24) & 0xFF]];
+		int_key[1] = deTBOX0[aes_sbox[(int_key[1]) & 0xFF]] ^ deTBOX1[aes_sbox[(int_key[1] >> 8) & 0xFF]]^deTBOX2[aes_sbox[(int_key[1]>>16) & 0xFF]]^deTBOX3[aes_sbox[(int_key[1] >> 24) & 0xFF]];
+		int_key[2] = deTBOX0[aes_sbox[(int_key[2]) & 0xFF]] ^ deTBOX1[aes_sbox[(int_key[2] >> 8) & 0xFF]]^deTBOX2[aes_sbox[(int_key[2]>>16) & 0xFF]]^deTBOX3[aes_sbox[(int_key[2] >> 24) & 0xFF]];
+		int_key[3] = deTBOX0[aes_sbox[(int_key[3]) & 0xFF]] ^ deTBOX1[aes_sbox[(int_key[3] >> 8) & 0xFF]]^deTBOX2[aes_sbox[(int_key[3]>>16) & 0xFF]]^deTBOX3[aes_sbox[(int_key[3] >> 24) & 0xFF]];
+	}
+}
+
 void round_function(__m128i* in) {
 	unsigned int* pint_in = (unsigned int*)in;
 	unsigned int out[4];
@@ -309,29 +330,17 @@ __m128i aes_fast_decrypt(__m128i cipher, __m128i* key){
 	unsigned int* pint_in = (unsigned int*)&cipher;
 	unsigned int wa0, wa1, wa2, wa3, wb0, wb1, wb2, wb3;
 	unsigned int* int_key = (unsigned int*)&key[9];
-	int_key[0] = deTBOX0[aes_sbox[(int_key[0]) & 0xFF]] ^ deTBOX1[aes_sbox[(int_key[0] >> 8) & 0xFF]]^deTBOX2[aes_sbox[(int_key[0]>>16) & 0xFF]]^deTBOX3[aes_sbox[(int_key[0] >> 24) & 0xFF]];
-	int_key[1] = deTBOX0[aes_sbox[(int_key[1]) & 0xFF]] ^ deTBOX1[aes_sbox[(int_key[1] >> 8) & 0xFF]]^deTBOX2[aes_sbox[(int_key[1]>>16) & 0xFF]]^deTBOX3[aes_sbox[(int_key[1] >> 24) & 0xFF]];
-	int_key[2] = deTBOX0[aes_sbox[(int_key[2]) & 0xFF]] ^ deTBOX1[aes_sbox[(int_key[2] >> 8) & 0xFF]]^deTBOX2[aes_sbox[(int_key[2]>>16) & 0xFF]]^deTBOX3[aes_sbox[(int_key[2] >> 24) & 0xFF]];
-	int_key[3] = deTBOX0[aes_sbox[(int_key[3]) & 0xFF]] ^ deTBOX1[aes_sbox[(int_key[3] >> 8) & 0xFF]]^deTBOX2[aes_sbox[(int_key[3]>>16) & 0xFF]]^deTBOX3[aes_sbox[(int_key[3] >> 24) & 0xFF]];
 	wb0 = deTBOX0[pint_in[0] & 0xFF] ^ deTBOX1[(pint_in[3] >> 8) & 0xFF] ^ deTBOX2[(pint_in[2] >> 16) & 0xFF] ^ deTBOX3[(pint_in[1] >> 24) & 0xFF] ^ int_key[0];
 	wb1 = deTBOX0[pint_in[1] & 0xFF] ^ deTBOX1[(pint_in[0] >> 8) & 0xFF] ^ deTBOX2[(pint_in[3] >> 16) & 0xFF] ^ deTBOX3[(pint_in[2] >> 24) & 0xFF] ^ int_key[1];
 	wb2 = deTBOX0[pint_in[2] & 0xFF] ^ deTBOX1[(pint_in[1] >> 8) & 0xFF] ^ deTBOX2[(pint_in[0] >> 16) & 0xFF] ^ deTBOX3[(pint_in[3] >> 24) & 0xFF] ^ int_key[2];
 	wb3 = deTBOX0[pint_in[3] & 0xFF] ^ deTBOX1[(pint_in[2] >> 8) & 0xFF] ^ deTBOX2[(pint_in[1] >> 16) & 0xFF] ^ deTBOX3[(pint_in[0] >> 24) & 0xFF] ^ int_key[3];
 	for (register int i = 8; i > 0; --i) {
 		int_key = (unsigned int*)&key[i];
-		int_key[0] = deTBOX0[aes_sbox[(int_key[0]) & 0xFF]] ^ deTBOX1[aes_sbox[(int_key[0] >> 8) & 0xFF]]^deTBOX2[aes_sbox[(int_key[0]>>16) & 0xFF]]^deTBOX3[aes_sbox[(int_key[0] >> 24) & 0xFF]];
-		int_key[1] = deTBOX0[aes_sbox[(int_key[1]) & 0xFF]] ^ deTBOX1[aes_sbox[(int_key[1] >> 8) & 0xFF]]^deTBOX2[aes_sbox[(int_key[1]>>16) & 0xFF]]^deTBOX3[aes_sbox[(int_key[1] >> 24) & 0xFF]];
-		int_key[2] = deTBOX0[aes_sbox[(int_key[2]) & 0xFF]] ^ deTBOX1[aes_sbox[(int_key[2] >> 8) & 0xFF]]^deTBOX2[aes_sbox[(int_key[2]>>16) & 0xFF]]^deTBOX3[aes_sbox[(int_key[2] >> 24) & 0xFF]];
-		int_key[3] = deTBOX0[aes_sbox[(int_key[3]) & 0xFF]] ^ deTBOX1[aes_sbox[(int_key[3] >> 8) & 0xFF]]^deTBOX2[aes_sbox[(int_key[3]>>16) & 0xFF]]^deTBOX3[aes_sbox[(int_key[3] >> 24) & 0xFF]];
 		wa0 = deTBOX0[wb0 & 0xFF] ^ deTBOX1[(wb3 >> 8) & 0xFF] ^ deTBOX2[(wb2 >> 16) & 0xFF] ^ deTBOX3[(wb1 >> 24) & 0xFF] ^ int_key[0];
 		wa1 = deTBOX0[wb1 & 0xFF] ^ deTBOX1[(wb0 >> 8) & 0xFF] ^ deTBOX2[(wb3 >> 16) & 0xFF] ^ deTBOX3[(wb2 >> 24) & 0xFF] ^ int_key[1];
 		wa2 = deTBOX0[wb2 & 0xFF] ^ deTBOX1[(wb1 >> 8) & 0xFF] ^ deTBOX2[(wb0 >> 16) & 0xFF] ^ deTBOX3[(wb3 >> 24) & 0xFF] ^ int_key[2];
 		wa3 = deTBOX0[wb3 & 0xFF] ^ deTBOX1[(wb2 >> 8) & 0xFF] ^ deTBOX2[(wb1 >> 16) & 0xFF] ^ deTBOX3[(wb0 >> 24) & 0xFF] ^ int_key[3];
 		int_key = (unsigned int*)&key[--i];
-		int_key[0] = deTBOX0[aes_sbox[(int_key[0]) & 0xFF]] ^ deTBOX1[aes_sbox[(int_key[0] >> 8) & 0xFF]]^deTBOX2[aes_sbox[(int_key[0]>>16) & 0xFF]]^deTBOX3[aes_sbox[(int_key[0] >> 24) & 0xFF]];
-		int_key[1] = deTBOX0[aes_sbox[(int_key[1]) & 0xFF]] ^ deTBOX1[aes_sbox[(int_key[1] >> 8) & 0xFF]]^deTBOX2[aes_sbox[(int_key[1]>>16) & 0xFF]]^deTBOX3[aes_sbox[(int_key[1] >> 24) & 0xFF]];
-		int_key[2] = deTBOX0[aes_sbox[(int_key[2]) & 0xFF]] ^ deTBOX1[aes_sbox[(int_key[2] >> 8) & 0xFF]]^deTBOX2[aes_sbox[(int_key[2]>>16) & 0xFF]]^deTBOX3[aes_sbox[(int_key[2] >> 24) & 0xFF]];
-		int_key[3] = deTBOX0[aes_sbox[(int_key[3]) & 0xFF]] ^ deTBOX1[aes_sbox[(int_key[3] >> 8) & 0xFF]]^deTBOX2[aes_sbox[(int_key[3]>>16) & 0xFF]]^deTBOX3[aes_sbox[(int_key[3] >> 24) & 0xFF]];
 		wb0 = deTBOX0[wa0 & 0xFF] ^ deTBOX1[(wa3 >> 8) & 0xFF] ^ deTBOX2[(wa2 >> 16) & 0xFF] ^ deTBOX3[(wa1 >> 24) & 0xFF] ^ int_key[0];
 		wb1 = deTBOX0[wa1 & 0xFF] ^ deTBOX1[(wa0 >> 8) & 0xFF] ^ deTBOX2[(wa3 >> 16) & 0xFF] ^ deTBOX3[(wa2 >> 24) & 0xFF] ^ int_key[1];
 		wb2 = deTBOX0[wa2 & 0xFF] ^ deTBOX1[(wa1 >> 8) & 0xFF] ^ deTBOX2[(wa0 >> 16) & 0xFF] ^ deTBOX3[(wa3 >> 24) & 0xFF] ^ int_key[2];
@@ -374,11 +383,13 @@ int main() {
 	clock_t start, end;
 	mm_plain = aes_fast_encrypt(mm_plain, mm_key);
 	print_mm(&mm_plain);
-	mm_plain = aes_fast_decrypt(mm_plain, mm_key);
+	__m128i mm_key_decrypt[20];
+	load_round_key_decrypt(mm_key_decrypt, key);
+	mm_plain = aes_fast_decrypt(mm_plain, mm_key_decrypt);
 	print_mm(&mm_plain);
 	start = clock();
 	for (register int i = 0; i < 0x1000000; ++i)
-		mm_plain = aes_fast_encrypt(mm_plain, mm_key);
+		mm_plain = aes_fast_decrypt(mm_plain, mm_key);
 	end = clock();
 	print_mm(&mm_plain);
 	printf("time=%lfs\n", (double)(end - start) / CLOCKS_PER_SEC);
