@@ -1,6 +1,6 @@
-from utils import gcd, ex_gcd, inverse, all_prime, my_pow, is_prime_miller, crt, ex_crt
+from .utils import gcd, ex_gcd, inverse, all_prime, my_pow, is_prime_miller, crt, ex_crt
 import random
-from SM3 import sm3_calc
+from .SM3 import sm3_calc
 
 def lucas(p, X, Y, k):
     delta = X * X - 4 * Y
