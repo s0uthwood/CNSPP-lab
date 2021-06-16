@@ -3,7 +3,7 @@ Cryptography Practice
 
 密码学作业备份
 
-使用
+## Usage
 
 ```python
 from CNSPP import *
