@@ -1,4 +1,4 @@
-from ZUC import left_rot
+from .ZUC import left_rot
 
 init_iv = 0x7380166f4914b2b9172442D7DA8A0600A96F30BC163138AAE38DEE4DB0FB0E4E
 T = [0x79cc4519] * 16 + [0x7a879d8a] * 48
