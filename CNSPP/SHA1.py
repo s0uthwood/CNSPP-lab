@@ -1,5 +1,5 @@
-from ZUC import left_rot
-from ECC import str2byte
+from .ZUC import left_rot
+from .ECC import str2byte
 
 k = [
     0x5A827999, # t in [0, 19]
