@@ -1,4 +1,4 @@
-from random import randint
+from random import randint as _randint
 
 def gcd(x, y):
     while y != 0:
@@ -68,7 +68,7 @@ def is_prime_miller(n):
         k += 1
     T = 15
     while T:
-        a = randint(3, n - 1)
+        a = _randint(3, n - 1)
         if gcd(a, n) > 1:
             return False
         a = my_pow(a, q, n)

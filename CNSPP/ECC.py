@@ -1,6 +1,6 @@
-from .utils import gcd, ex_gcd, inverse, all_prime, my_pow, is_prime_miller, crt, ex_crt
-import random
-from .SM3 import sm3_calc
+from .utils import inverse as _inverse, my_pow as _my_pow
+import random as _random
+from .SM3 import sm3_calc as _sm3_calc
 
 def lucas(p, X, Y, k):
     delta = X * X - 4 * Y
@@ -9,7 +9,7 @@ def lucas(p, X, Y, k):
     k_bin = bin(k)[2:]
     k_binlen = len(k_bin)
     for i in range(1, k_binlen):
-        U, V = U * V % p, ((V * V + delta * U * U) * (p + 1) // 2) % p # (p + 1) // 2 == inverse(2, p)
+        U, V = U * V % p, ((V * V + delta * U * U) * (p + 1) // 2) % p # (p + 1) // 2 == _inverse(2, p)
         if k_bin[i] == '1':
             U, V = ((X * U + V) * (p + 1) // 2) % p, ((X * V + delta * U) * (p + 1) // 2) % p
     return U, V
@@ -43,11 +43,11 @@ class ECC_Point:
         if self == other:
             if self.y == 0:
                 return ECC_Point(None, None, self.curve)
-            t = (3 * self.x * self.x + self.curve.a) * inverse(2 * self.y, p) % p
+            t = (3 * self.x * self.x + self.curve.a) * _inverse(2 * self.y, p) % p
         elif self.x == other.x and self.y != other.y:
             return ECC_Point(None, None, self.curve)
         else:
-            t = (other.y - self.y) * inverse(other.x - self.x, p) % p
+            t = (other.y - self.y) * _inverse(other.x - self.x, p) % p
         x = (t * t - self.x - other.x) % p
         y = (t * (self.x - x) - self.y) % p
         return ECC_Point(x, y, self.curve)
@@ -109,23 +109,23 @@ class Curve:
         x = (x * x * x + self.a * x + self.b) % p
         if p % 4 == 3:
             u = p // 4
-            y = my_pow(x, u, p)
-            z = my_pow(y, 2, p)
+            y = _my_pow(x, u, p)
+            z = _my_pow(y, 2, p)
             if z == x:
                 return y
             return None
         elif p % 8 == 5:
             u = p // 8
-            z = my_pow(x, 2 * u + 1, p)
+            z = _my_pow(x, 2 * u + 1, p)
             if z % p == 1:
-                return my_pow(x, u + 1, p)
+                return _my_pow(x, u + 1, p)
             elif z % p == -1:
-                return (2 * x * my_pow(4 * x, u, p)) % p
+                return (2 * x * _my_pow(4 * x, u, p)) % p
             return None
         elif p % 8 == 1:
             u = p // 8
             while True:
-                U, V = lucas(p, random.randint(1, p - 1), x, 4 * u + 1)
+                U, V = lucas(p, _random.randint(1, p - 1), x, 4 * u + 1)
                 if V * V % p == 4 * x % p:
                     return (V * (p + 1) // 2) % p
                 elif U % p != 1 and U % p != p - 1:
@@ -174,11 +174,7 @@ def int2str(n):
     return s
 
 def byte2int(b):
-    n = 0
-    for i in range(len(b)):
-        n <<= 8
-        n += b[i]
-    return n
+    return int.from_bytes(b, 'big', signed = False)
 
 def int2byte(n):
     b = b''
@@ -227,7 +223,7 @@ def msg2point(curve: Curve, m):
         y = curve.calc_y(x)
         if y != None:
             return ECC_Point(x, y, curve)
-        m += random.randint(1, 0xff).to_bytes(1, 'big')
+        m += _random.randint(1, 0xff).to_bytes(1, 'big')
 
 def point2msg(curve: Curve, P):
     msg = int2byte(P.x)
@@ -236,7 +232,7 @@ def point2msg(curve: Curve, P):
 
 def ECC_keygen(curve: Curve):
     G = ECC_Point(curve.G_x, curve.G_y, curve)
-    sk = random.randint(1, curve.n - 1)
+    sk = _random.randint(1, curve.n - 1)
     pk = sk * G
     return sk, pk
 
@@ -245,7 +241,7 @@ def ECC_sharedkey(Q: ECC_Point, sk: int):
 
 def ECC_encrypt_point(curve: Curve, M: ECC_Point, pk: ECC_Point):
     G = ECC_Point(curve.G_x, curve.G_y, curve)
-    k = random.randint(1, curve.n)
+    k = _random.randint(1, curve.n)
     # k = 41
     C1 = k * G
     C2 = M + k * pk
@@ -258,20 +254,20 @@ def ECC_decrypt_point(curve: Curve, na: int, C1: ECC_Point, C2: ECC_Point):
 def SM2_sign(ENTLA: bytes, IDA: bytes, curve: Curve, point: ECC_Point, msg: bytes, da):
     # point is public key
     Z = ENTLA + IDA + int2byte(curve.a) + int2byte(curve.b) + int2byte(curve.G_x) + int2byte(curve.G_y) + int2byte(point.x) + int2byte(point.y)
-    Z = sm3_calc(Z)
+    Z = _sm3_calc(Z)
     M_hat = int2byte(int(Z, 16)) + msg
     # print (M_hat)
-    # print (sm3_calc(M_hat))
-    e = int(sm3_calc(M_hat), 16)
+    # print (_sm3_calc(M_hat))
+    e = int(_sm3_calc(M_hat), 16)
     G = ECC_Point(curve.G_x, curve.G_y, curve)
     while True:
-        # k = random.randint(1, curve.n - 1)
+        # k = _random.randint(1, curve.n - 1)
         k = 0x6CB28D99385C175C94F94E934817663FC176D925DD72B727260DBAAE1FB2F96F
         P = k * G
         r = (e + P.x) % curve.n
         if r != 0 and r + k != curve.n:
             break
-    s = inverse(1 + da, curve.n) * (k - r * da) % curve.n
+    s = _inverse(1 + da, curve.n) * (k - r * da) % curve.n
     return msg, r, s
 
 def SM2_valid(curve: Curve, Z_A, P_A, M, r, s):
@@ -280,7 +276,7 @@ def SM2_valid(curve: Curve, Z_A, P_A, M, r, s):
     if s <= 1 or s >= curve.n:
         return False
     M_hat = Z_A + M
-    e = int(sm3_calc(M_hat), 16)
+    e = int(_sm3_calc(M_hat), 16)
     print (hex(e))
     t = (r + s) % curve.n
     print (hex(t))

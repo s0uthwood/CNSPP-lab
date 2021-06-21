@@ -1,5 +1,5 @@
-from .ZUC import left_rot
-from .ECC import str2byte
+from .ZUC import left_rot as _left_rot
+
 
 k = [
     0x5A827999, # t in [0, 19]
@@ -8,6 +8,7 @@ k = [
     0xCA62C1D6  # t in [60, 79]
 ]
 
+
 init_H = [
     0x67452301,
     0xEFCDAB89,
@@ -15,6 +16,7 @@ init_H = [
     0x10325476,
     0xC3D2E1F0
 ]
+
 
 def sha1_padding(m: bytes):
     m_len = len(m)
@@ -25,6 +27,7 @@ def sha1_padding(m: bytes):
     m_bin += '0' * pad_len
     m_bin += bin(m_bin_len - 1)[2:].rjust(64, '0')
     return m_bin
+
 
 def f_t(t, B, C, D):
     t //= 20
@@ -38,12 +41,13 @@ def f_t(t, B, C, D):
     else:
         raise ValueError("Wrong t")
 
+
 def sha1_extend(m):
     w = []
     for t in range(16):
         w.append(int(m[t * 32: (t + 1) * 32], 2))
     for t in range(16, 80):
-        w.append(left_rot(w[t - 3] ^ w[t - 8] ^ w[t - 14] ^ w[t - 16], 1, 32))
+        w.append(_left_rot(w[t - 3] ^ w[t - 8] ^ w[t - 14] ^ w[t - 16], 1, 32))
     return w
 
 
@@ -54,8 +58,8 @@ def sha1_compress(m, reg):
     #     print (hex(_))
     A, B, C, D, E = reg
     for t in range(80):
-        TEMP = (left_rot(A, 5, 32) + f_t(t, B, C, D) + E + w[t] + k[t // 20]) & 0xffffffff
-        A, B, C, D, E = TEMP, A, left_rot(B, 30, 32), C, D
+        TEMP = (_left_rot(A, 5, 32) + f_t(t, B, C, D) + E + w[t] + k[t // 20]) & 0xffffffff
+        A, B, C, D, E = TEMP, A, _left_rot(B, 30, 32), C, D
         # print ("%8x %8x %8x %8x %8x" % (A, B, C, D, E))
     reg[0] = (reg[0] + A) & 0xffffffff
     reg[1] = (reg[1] + B) & 0xffffffff
@@ -63,6 +67,7 @@ def sha1_compress(m, reg):
     reg[3] = (reg[3] + D) & 0xffffffff
     reg[4] = (reg[4] + E) & 0xffffffff
     return reg
+
 
 def sha1_calc(m: bytes):
     reg = [h for h in init_H]
@@ -75,7 +80,8 @@ def sha1_calc(m: bytes):
         digest += hex(r)[2:].rjust(8, '0')
     return digest
 
-def hmac_sha1(M: bytes, K: bytes, bit_len):
+
+def hmac_sha1(M: bytes, K: bytes, bit_len = 512):
     if bit_len % 8 != 0:
         raise ValueError("wrong bit length")
     K += b'\x00' * (bit_len // 8 - len(K))
@@ -85,16 +91,18 @@ def hmac_sha1(M: bytes, K: bytes, bit_len):
     K_plus = K
     Si = K_plus ^ ipad
     tmp = sha1_calc(Si.to_bytes(bit_len // 8, 'big') + M)
-    print (Si.to_bytes(bit_len // 8, 'big') + M)
+    # print (Si.to_bytes(bit_len // 8, 'big') + M)
     opad = int("01011100" * (bit_len // 8), 2)
     So = K_plus ^ opad
     return sha1_calc(So.to_bytes(bit_len // 8, 'big') + int(tmp, 16).to_bytes(20, 'big'))
+
 
 def main():
     print (sha1_calc(b'abc'))
     print (sha1_calc(b'abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq'))
     print (sha1_calc(b'aa' * 500000))
     print (hmac_sha1(b'Hi There', b'\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b', 160))
+
 
 if __name__ == "__main__":
     main()

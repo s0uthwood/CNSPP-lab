@@ -1,11 +1,11 @@
-from .utils import gcd
+from .utils import gcd as _gcd
 
 def BBS(p, q, s, num):
     if(p % 4 != 3 or q % 4 != 3):
         print ("error p, q")
         return 0
     n = p * q
-    if (gcd(n, s) != 1):
+    if (_gcd(n, s) != 1):
         print ("error s")
         return 0
     X = [s ** 2 % n]

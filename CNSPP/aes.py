@@ -1,6 +1,6 @@
-from .galois import GF2
-from copy import deepcopy
-import random
+from .galois import GF2 as _GF2
+from copy import deepcopy as _deepcopy
+import random as _random
 
 _aes_s_box = [
     [0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76],
@@ -39,7 +39,7 @@ _aes_s_box_inverse = [
     [0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d]
 ]
 
-def __convert_to_array(plain_int):
+def _convert_to_array(plain_int):
     plain_array = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
     for i in range(4)[::-1]:
         for j in range(4)[::-1]:
@@ -47,32 +47,32 @@ def __convert_to_array(plain_int):
             plain_int >>= 8
     return plain_array
 
-def __get_num_from_sbox(index):
+def _get_num_from_sbox(index):
     row = (index & 0xf0) >> 4
     col = index & 0xf
     return _aes_s_box[row][col]
 
-def __get_num_from_sbox_inverse(index):
+def _get_num_from_sbox_inverse(index):
     row = (index & 0xf0) >> 4
     col = index & 0xf
     return _aes_s_box_inverse[row][col]
 
-def __sub_bytes(input_array):
+def _sub_bytes(input_array):
     for i in range(4):
         for j in range(4):
-            input_array[i][j] = __get_num_from_sbox(input_array[i][j])
+            input_array[i][j] = _get_num_from_sbox(input_array[i][j])
 
-def __sub_bytes_inverse(input_array):
+def _sub_bytes_inverse(input_array):
     for i in range(4):
         for j in range(4):
-            input_array[i][j] = __get_num_from_sbox_inverse(input_array[i][j])
+            input_array[i][j] = _get_num_from_sbox_inverse(input_array[i][j])
 
-def __shift_rows(input_array):
+def _shift_rows(input_array):
     input_array[1] = input_array[1][1:] + [input_array[1][0]]
     input_array[2] = input_array[2][2:] + input_array[2][:2]
     input_array[3] = [input_array[3][3]]  + input_array[3][:3]
 
-def __shift_rows_inverse(input_array):
+def _shift_rows_inverse(input_array):
     input_array[3] =   input_array[3][1:] + [ input_array[3][0] ]
     input_array[2] =   input_array[2][2:]   + input_array[2][:2]
     input_array[1] = [ input_array[1][3] ]  + input_array[1][:3]
@@ -84,14 +84,14 @@ columns_matrix = [
     [3, 1, 1, 2]
 ]
 
-def __mix_columns(input_array):
+def _mix_columns(input_array):
     res_array = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
     for i in range(4):
         for j in range(4):
-            res = GF2(0)
+            res = _GF2(0)
             for k in range(4):
-                res += GF2(columns_matrix[i][k]) * GF2(input_array[k][j])
-            res %= GF2(0b100011011)
+                res += _GF2(columns_matrix[i][k]) * _GF2(input_array[k][j])
+            res %= _GF2(0b100011011)
             res_array[i][j] = res.data
     return res_array
 
@@ -102,55 +102,55 @@ columns_matrix_inverse = [
     [0xb, 0xd, 0x9, 0xe]
 ]
 
-def __mix_columns_inverse(input_array):
+def _mix_columns_inverse(input_array):
     res_array = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
     for i in range(4):
         for j in range(4):
-            res = GF2(0)
+            res = _GF2(0)
             for k in range(4):
-                res += GF2(columns_matrix_inverse[i][k]) * GF2(input_array[k][j])
-            res %= GF2(0b100011011)
+                res += _GF2(columns_matrix_inverse[i][k]) * _GF2(input_array[k][j])
+            res %= _GF2(0b100011011)
             res_array[i][j] = res.data
     return res_array
 
-def __add_round_key(input_array, key_array):
+def _add_round_key(input_array, key_array):
     for i in range(4):
         for j in range(4):
             input_array[i][j] ^= key_array[i][j]
 
-def __key_schedule(pre_key, round):
+def _key_schedule(pre_key, round):
     next_key = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
     # print (pre_key)
     for i in range(4):
         next_key[i][0] = pre_key[i - 3][3]
-    __sub_bytes(next_key)
+    _sub_bytes(next_key)
     for i in range(4):
         next_key[i][0] ^= pre_key[i][0]
-    next_key[0][0] ^= (GF2(pow(2, round)) % GF2(0x11b)).data
+    next_key[0][0] ^= (_GF2(pow(2, round)) % _GF2(0x11b)).data
     for i in range(1, 4):
         for j in range(4):
             next_key[j][i] = next_key[j][i - 1] ^ pre_key[j][i]
     return next_key
 
-def __key_schedule_inverse(next_key, round):
+def _key_schedule_inverse(next_key, round):
     pre_key = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
     for i in range(3, 0, -1):
         for j in range(4):
             pre_key[j][i] = next_key[j][i - 1] ^ next_key[j][i]
-    pre_key[0][0] = (GF2(pow(2, round)) % GF2(0x11b)).data
+    pre_key[0][0] = (_GF2(pow(2, round)) % _GF2(0x11b)).data
     for i in range(4):
         pre_key[i][0] ^= next_key[i][0]
-        pre_key[i][0] ^= __get_num_from_sbox(pre_key[i - 3][3])
+        pre_key[i][0] ^= _get_num_from_sbox(pre_key[i - 3][3])
     return pre_key
 
-def __aes_key_gen(key):
-    key = __convert_to_array(key)
+def _aes_key_gen(key):
+    key = _convert_to_array(key)
     round_key = [key]
     for i in range(10):
-        round_key.append(__key_schedule(round_key[i], i))
+        round_key.append(_key_schedule(round_key[i], i))
     return round_key
 
-def __convert_to_int(input_array):
+def _convert_to_int(input_array):
     output_int = 0
     for i in range(4):
         for j in range(4):
@@ -160,36 +160,36 @@ def __convert_to_int(input_array):
 
 def aes_encrypt(plain_text, key):
     plain_text ^= key
-    round_key = __aes_key_gen(key)
+    round_key = _aes_key_gen(key)
     # print_array(round_key[9])
     # print_array(round_key[10])
-    plain_array = __convert_to_array(plain_text)
+    plain_array = _convert_to_array(plain_text)
     for i in range(1, 10):
-        __sub_bytes(plain_array)
-        __shift_rows(plain_array)
+        _sub_bytes(plain_array)
+        _shift_rows(plain_array)
         # if i == 9:
             # print_array(plain_array)
-        plain_array = __mix_columns(plain_array)
-        __add_round_key(plain_array, round_key[i])
-    __sub_bytes(plain_array)
-    __shift_rows(plain_array)
-    __add_round_key(plain_array, round_key[10])
+        plain_array = _mix_columns(plain_array)
+        _add_round_key(plain_array, round_key[i])
+    _sub_bytes(plain_array)
+    _shift_rows(plain_array)
+    _add_round_key(plain_array, round_key[10])
     # print_array(plain_array)
-    return __convert_to_int(plain_array)
+    return _convert_to_int(plain_array)
 
 def aes_decrypt(cipher_text, key):
-    round_key = __aes_key_gen(key)[::-1]
-    cipher_array = __convert_to_array(cipher_text)
-    __add_round_key(cipher_array, round_key[0])
+    round_key = _aes_key_gen(key)[::-1]
+    cipher_array = _convert_to_array(cipher_text)
+    _add_round_key(cipher_array, round_key[0])
     for i in range(1, 10):
-        __shift_rows_inverse(cipher_array)
-        __sub_bytes_inverse(cipher_array)
-        __add_round_key(cipher_array, round_key[i])
-        cipher_array = __mix_columns_inverse(cipher_array)
-    __shift_rows_inverse(cipher_array)
-    __sub_bytes_inverse(cipher_array)
-    __add_round_key(cipher_array, round_key[10])
-    return __convert_to_int(cipher_array)
+        _shift_rows_inverse(cipher_array)
+        _sub_bytes_inverse(cipher_array)
+        _add_round_key(cipher_array, round_key[i])
+        cipher_array = _mix_columns_inverse(cipher_array)
+    _shift_rows_inverse(cipher_array)
+    _sub_bytes_inverse(cipher_array)
+    _add_round_key(cipher_array, round_key[10])
+    return _convert_to_int(cipher_array)
 
 # for debug
 def print_array(array):
@@ -197,7 +197,7 @@ def print_array(array):
     for i in array:
         print ('[', end=' ')
         for j in i:
-            print (f'0x%2x' % j, end= ' ')
+            print ('0x%2x' % j, end= ' ')
         print (']')
 
 
@@ -211,7 +211,7 @@ def fault_analysis(epsilon, true_res, col):
     for s in S:
         for e in range(2 ** 8):
             for x in range(2 ** 8):
-                if __get_num_from_sbox(x ^ (GF2(s[1]) * GF2(e) % GF2(0x11b)).data) == __get_num_from_sbox(x) ^ s[0]:
+                if _get_num_from_sbox(x ^ (_GF2(s[1]) * _GF2(e) % _GF2(0x11b)).data) == _get_num_from_sbox(x) ^ s[0]:
                     s[2].add(e)
                     break
     s = S[0][2]
@@ -221,36 +221,36 @@ def fault_analysis(epsilon, true_res, col):
     for e in s:
         for x in range(2 ** 8):
             for i in range(4):
-                if __get_num_from_sbox(x ^ (GF2(c[i]) * GF2(e) % GF2(0x11b)).data) == __get_num_from_sbox(x) ^ epsilon[i]:
+                if _get_num_from_sbox(x ^ (_GF2(c[i]) * _GF2(e) % _GF2(0x11b)).data) == _get_num_from_sbox(x) ^ epsilon[i]:
                     X[i].add(x)
     K = [ set() for i in range(4) ]
     for i in range(4):
         for lam in X[i]:
-            K[i].add(__get_num_from_sbox(lam) ^ true_res[i])
+            K[i].add(_get_num_from_sbox(lam) ^ true_res[i])
     return K
 
 def __sim_last_round(input_array, key_9, key_10):
-    input_array = __mix_columns(input_array)
-    __add_round_key(input_array, key_9)
-    __sub_bytes(input_array)
-    __shift_rows(input_array)
-    __add_round_key(input_array, key_10)
+    input_array = _mix_columns(input_array)
+    _add_round_key(input_array, key_9)
+    _sub_bytes(input_array)
+    _shift_rows(input_array)
+    _add_round_key(input_array, key_10)
     return input_array
 
 
 # input: an cipher in round 9 waiting to be injected, two keys only used to pass to the crypt matchine
 # output: key in round 10
 def error_injection(array_to_inject, key_9, key_10):
-    correct = __sim_last_round(deepcopy(array_to_inject), key_9, key_10) # 首先计算正确结果
+    correct = __sim_last_round(_deepcopy(array_to_inject), key_9, key_10) # 首先计算正确结果
     key = [ set(j for j in range(2 ** 8)) for i in range(16) ]
     impact = [[0, 13, 10, 7], [4, 1, 14, 11], [8, 5, 2, 15], [12, 9, 6, 3]]
     for i in range(4):
         # 若对应四个位置的密钥空间完全确定，再确定下四个位置的密钥
         while len(key[impact[i][0]]) > 1 or len(key[impact[i][1]]) > 1 or len(key[impact[i][2]]) > 1 or len(key[impact[i][3]]) > 1:
-            injected_array = deepcopy(array_to_inject)
-            fault = random.randint(1, 0xff)
+            injected_array = _deepcopy(array_to_inject)
+            fault = _random.randint(1, 0xff)
             injected_array[0][i] ^= fault
-            error = __sim_last_round(deepcopy(injected_array), key_9, key_10) # 注入错误
+            error = __sim_last_round(_deepcopy(injected_array), key_9, key_10) # 注入错误
             true_res = []
             epsilon = []
             for j in range(4):
@@ -270,8 +270,7 @@ def error_injection(array_to_inject, key_9, key_10):
             last_key[j][i] = list(key[(i << 2) + j])[0]
     # 用最终计算出的Key[10]反向推算出Key[0]
     for i in range(9, -1, -1):
-        last_key = __key_schedule_inverse(last_key, i)
-    return __convert_to_int(last_key)
-
+        last_key = _key_schedule_inverse(last_key, i)
+    return _convert_to_int(last_key)
 
 

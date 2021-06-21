@@ -1,7 +1,5 @@
 # CNSPP-lab
 
-Cryptography Practice
-
 密码学作业备份
 
 ## Usage
@@ -21,13 +19,9 @@ from CNSPP import *
 
 - https://zhuanlan.zhihu.com/p/42264499
 
-Current speed (-O3): 2Gb in 0.6s (about 3.3Gbps)
+Current speed (-O3 -msse4): 2Gb in 0.6s (about 3.3Gbps)
 
 > CPU: i5-9600k
-
-TODO:
-
-- Efficient Rijndael Encryption Implementation with Composite Field Arithmetic
 
 ### des
 

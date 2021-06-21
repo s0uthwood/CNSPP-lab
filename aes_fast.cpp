@@ -389,7 +389,13 @@ int main() {
 	print_mm(&mm_plain);
 	start = clock();
 	for (register int i = 0; i < 0x1000000; ++i)
-		mm_plain = aes_fast_decrypt(mm_plain, mm_key);
+		mm_plain = aes_fast_encrypt(mm_plain, mm_key);
+	end = clock();
+	print_mm(&mm_plain);
+	printf("time=%lfs\n", (double)(end - start) / CLOCKS_PER_SEC);
+	start = clock();
+	for (register int i = 0; i < 0x1000000; ++i)
+		mm_plain = aes_fast_decrypt(mm_plain, mm_key_decrypt);
 	end = clock();
 	print_mm(&mm_plain);
 	printf("time=%lfs\n", (double)(end - start) / CLOCKS_PER_SEC);

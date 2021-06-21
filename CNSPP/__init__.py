@@ -8,3 +8,7 @@ from .stream import *
 from .ZUC import *
 from .RSA import *
 from .ECC import *
+from .SM3 import *
+from .SHA1 import *
+from .Elgamal import *
+from .Schnorr import *

@@ -127,3 +127,6 @@ if __name__ == '__main__':
 	print ('%x\n%x\n' % (a[0], a[1]))
 	a = zuc_run(0x3d4c4be96a82fdaeb58f641db17b455b, 0x84319aa8de6915ca1f6bda6bfbd8c766, 2)
 	print ('%x\n%x\n' % (a[0], a[1]))
+	a = zuc_run(0x338985fedc98cb99c9f9b346bd6cae56, 0x7dd3175c2374c7113bcbbfb339563172, 10)
+	for a_i in a:
+		print ('%x' % (a_i))
