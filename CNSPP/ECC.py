@@ -159,6 +159,15 @@ test_Curve = Curve(
     174050332293622031404857552280219410364023488927386650641
 )
 
+Fp_192 = Curve(
+    0xbb8e5e8fbc115e139fe6a814fe48aaa6f0ada1aa5df91985,
+    0x1854bebdc31b21b7aefc80ab0ecd10d5b1b3308e6dbf11c1,
+    0xbdb6f4fe3e8b1d9e0da8c0d46f4c318cefe4afe3b6b8551f,
+    0xbdb6f4fe3e8b1d9e0da8c0d40fc962195dfae76f56564677,
+    0x4ad5f7048de709ad51236de65e4d4b482c836dc6e4106640,
+    0x02bb3a02d4aaadacae24817a4ca3a1b014b5270432db27d2
+)
+
 def str2int(s):
     n = 0
     for i in range(len(s)):
@@ -176,59 +185,35 @@ def int2str(n):
 def byte2int(b):
     return int.from_bytes(b, 'big', signed = False)
 
-def int2byte(n):
+def int2byte(n, length = None):
     b = b''
-    length = len(hex(n)) - 2
-    length = length // 2 + (length & 1)
+    if length == None:
+        length = len(hex(n)) - 2
+        length = length // 2 + (length & 1)
     return n.to_bytes(length, 'big')
 
 def str2byte(s):
     return s.encode('utf-8')
 
-def point2byte(P, p, mode):
-    # p: field F_p
-    # mode == 0: compression
-    # mode == 1: uncompression
-    # mode == 2: mix
-    x, y = P
+def hex2byte(a):
+    return int2byte(int(a, 16))
+
+def point2byte(P):
+    x, y, curve = P.x, P.y, P.curve
     if x == 0 and y == 0:
         print ("[error] in point2byte: wrong point!")
         return
-    X = int2byte(x)
-    if mode == 0:
-        y_t = y & 1
-        return (b'\x02' if y_t == 0 else b'\x03') + X
-    Y = int2byte(y)
-    if mode == 1:
-        return b'\x04' + X + Y
-    if mode == 2:
-        y_t = y & 1
-        return (b'\x06' if y_t == 0 else b'\x07') + X + Y
-    print ("[error] in point2byte: mode should [ 0 | 1 | 2 ]")
-    return 
+    X = int2byte(x, (len(hex(curve.p)[2:]) + 1) // 2)
+    Y = int2byte(y, (len(hex(curve.p)[2:]) + 1) // 2)
+    return b'\x04' + X + Y
 
-def byte2point(b):
+def byte2point(b, curve):
     PC = b[0]
-    if PC == 2 or PC == 3:
-        y_t = PC - 2
-    elif PC == 4:
-        return
-    elif PC == 6 or PC == 7:
-        return 
-
-def msg2point(curve: Curve, m):
-    m = len(m).to_bytes(1, 'big') + m
-    while True:
-        x = int.from_bytes(m, 'big')
-        y = curve.calc_y(x)
-        if y != None:
-            return ECC_Point(x, y, curve)
-        m += _random.randint(1, 0xff).to_bytes(1, 'big')
-
-def point2msg(curve: Curve, P):
-    msg = int2byte(P.x)
-    msg_len = msg[0]
-    return msg[1 : msg_len + 1]
+    b = b[1:]
+    l = len(b) // 2
+    x = byte2int(b[:l])
+    y = byte2int(b[l:])
+    return ECC_Point(x, y, curve)
 
 def ECC_keygen(curve: Curve):
     G = ECC_Point(curve.G_x, curve.G_y, curve)
@@ -291,6 +276,45 @@ def SM2_valid(curve: Curve, Z_A, P_A, M, r, s):
     if R == r:
         return True
     return False
+
+def SM2_KDF(Z: bytes, klen):
+    ct = 0x1
+    v = 256
+    if klen > (2 ** 32 - 1) * v:
+        raise ValueError("@klen should smaller than (2 ** 32 - 1) * v")
+    Ha = []
+    for i in range((klen + v - 1) // v):
+        # print (Z + ct.to_bytes(4, 'big'))
+        Ha.append(hex2byte(_sm3_calc(Z + ct.to_bytes(4, 'big'))))
+        ct += 1
+    # print (Ha)
+    if klen % v != 0:
+        last_len = klen - (klen // v * v)
+        mod_len = -last_len % 8
+        Ha[-1] = (int.from_bytes(Ha[-1], 'big', signed = False) >> (v - last_len) << mod_len).to_bytes((last_len + mod_len) // 8, 'big')
+    K = b''
+    for h in Ha[:-2]:
+        K += h
+    K += Ha[-1]
+    return K
+
+def SM2_encrypt(msg, curve, db):
+    klen = len(msg) * 8
+    k = _random.randint(1, curve.n - 1)
+    k = 0x384F30353073AEECE7A1654330A96204D37982A3E15B2CB5
+    G = ECC_Point(curve.G_x, curve.G_y, curve)
+    C1 = k * G
+    C1 = point2byte(C1)
+    Pb = db * G
+    tmp = k * Pb
+    x2, y2 = tmp.x, tmp.y
+    curvelen = (len(hex(curve.p)[2:]) + 1) // 2
+    x2 = int2byte(x2, curvelen)
+    y2 = int2byte(y2, curvelen)
+    t = SM2_KDF(x2 + y2, klen)
+    C2 = int2byte(byte2int(msg) ^ byte2int(t))
+    C3 = hex2byte(_sm3_calc(x2 + msg + y2))
+    return C1 + C3 + C2
 
 def main():
     curve = Curve(2, 3, 17, 128, 1, 1)
