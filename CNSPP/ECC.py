@@ -298,14 +298,13 @@ def SM2_KDF(Z: bytes, klen):
     K += Ha[-1]
     return K
 
-def SM2_encrypt(msg, curve, db):
+def SM2_encrypt(msg, curve, Pb):
     klen = len(msg) * 8
     k = _random.randint(1, curve.n - 1)
-    k = 0x384F30353073AEECE7A1654330A96204D37982A3E15B2CB5
+    # k = 0x384F30353073AEECE7A1654330A96204D37982A3E15B2CB5
     G = ECC_Point(curve.G_x, curve.G_y, curve)
     C1 = k * G
     C1 = point2byte(C1)
-    Pb = db * G
     tmp = k * Pb
     x2, y2 = tmp.x, tmp.y
     curvelen = (len(hex(curve.p)[2:]) + 1) // 2
@@ -316,6 +315,33 @@ def SM2_encrypt(msg, curve, db):
     C3 = hex2byte(_sm3_calc(x2 + msg + y2))
     return C1 + C3 + C2
 
+def SM2_decrypt(C, curve, db, klen):
+    c_len = (len(hex(curve.p)[2:]) + 1) // 2
+    C1 = C[:1 + 2 * c_len]
+    C1 = byte2point(C1, curve)
+    if C1.is_on_curve() == False:
+        raise ValueError("Wrong cipher or curve")
+    tmp = db * C1
+    x2, y2 = tmp.x, tmp.y
+    x2 = int2byte(x2)
+    y2 = int2byte(y2)
+    t = SM2_KDF(x2 + y2, klen)
+    if int.from_bytes(t, 'big', signed = False) == 0:
+        raise ValueError("Wrong @KDF(x2 + y2, klen)")
+    C2 = C[-(klen + 7) // 8 + 1:]
+    # print (C2, t)
+    M = byte2int(C2) ^ byte2int(t)
+    M = int2byte(M)
+    # print (x2)
+    # print (y2)
+    u = hex2byte(_sm3_calc(x2 + M + y2))
+    C3 = C[1 + 2 * c_len : -(klen + 7) // 8 + 1]
+    # print (u)
+    # print (C3)
+    if u != C3:
+        raise ValueError("Wrong @C3")
+    return M
+    
 def main():
     curve = Curve(2, 3, 17, 128, 1, 1)
     P = ECC_Point(2, 7, curve)
