@@ -1,17 +1,13 @@
-# TODO: unfinished
-
 from .RSA import get_prime as _get_prime
 from .utils import my_pow as _my_pow, inverse as _inverse
 from .ECC import int2byte as _int2byte
 import random as _random
 import hashlib as _hashlib
 
-def schnorr_key_gen():
-    p = _get_prime(1024)
-    while True:
-        q = _get_prime(160)
-        if (p - 1) % q == 0:
-            break
+def schnorr_key_gen(p, q):
+    # p = _get_prime(1024)
+    # q = _get_prime(160)
+    assert (p - 1) % q == 0
     while True:
         g = _random.randint(2, p - 1)
         if _my_pow(g, q, p) == 1:
@@ -30,7 +26,7 @@ def schnorr_sign(msg, p, q, g, x):
     return e, s, msg
 
 def schnorr_verify(msg, e, s, p, q, g, y):
-    r = _my_pow(g, s, p) * _inverse(_my_pow(y, e, p), p) % p
+    r = _my_pow(g, s, p) * _inverse(_my_pow(y, int(e, 16), p), p) % p
     if type(msg) == str:
         msg = msg.encode()
     h = _hashlib.md5(_int2byte(r) + msg).hexdigest()
