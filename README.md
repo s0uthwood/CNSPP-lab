@@ -22,6 +22,8 @@ from CNSPP import *
 Current speed (-O3 -msse4): 2Gb in 0.6s (about 3.3Gbps)
 
 > CPU: i5-9600k
+>
+> System: Win11 and WSL2 Ubuntu2004
 
 ### des
 
